@@ -317,7 +317,7 @@ public class CombatUIManager : MonoBehaviour
                 levelNameText.text = config.levelName;
 
             if (thresholdText != null)
-                thresholdText.text = $"Mínimo para dañar: {config.minimumScoreToDamage}";
+                thresholdText.text = $"{config.minimumScoreToDamage}";
 
             if (dealerNameText != null)
                 dealerNameText.text = config.isBossLevel ? config.bossName : config.levelName;
