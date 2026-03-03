@@ -1,0 +1,75 @@
+{
+    "version": 1,
+    "name": "PlayerInput",
+    "maps": [
+        {
+            "name": "InputAction",
+            "id": "1f9a8ae6-3c2e-4409-a541-5e0c6d30a7ff",
+            "actions": [
+                {
+                    "name": "Hit",
+                    "type": "Button",
+                    "id": "c8ba46c2-d6a7-402b-ad8c-28ea95915aac",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Stand",
+                    "type": "Button",
+                    "id": "f2495ce0-07b8-4e23-b98c-321783275c26",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "NewGame",
+                    "type": "Button",
+                    "id": "643b1c26-497f-41d9-b01c-ceb943944dfc",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "589ea711-f992-4257-a822-b18e19474a6e",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Hit",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "44d0f772-0886-4652-85a7-7a921835cd8c",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Stand",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "47572bf9-039e-4ecb-bfe4-a8533227d2c8",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "NewGame",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

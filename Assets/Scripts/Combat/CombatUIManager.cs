@@ -84,10 +84,10 @@ public class CombatUIManager : MonoBehaviour
     private void Start()
     {
         // Configurar botones
-        if (restartButton != null)
+        if (restartButton != null && Input.GetKeyDown(KeyCode.R))
             restartButton.onClick.AddListener(OnRestartClicked);
         
-        if (nextLevelButton != null)
+        if (nextLevelButton != null && Input.GetKeyDown(KeyCode.Space))
             nextLevelButton.onClick.AddListener(OnNextLevelClicked);
 
         // Inicializar sliders
@@ -349,7 +349,7 @@ public class CombatUIManager : MonoBehaviour
 
         if (vulnerabilityText != null)
         {
-            vulnerabilityText.text = "¡VULNERABLE!\nx2 Daño";
+            vulnerabilityText.text = "¡VULNERABLE!";
             vulnerabilityText.color = vulnerableColor;
         }
     }
@@ -414,14 +414,14 @@ public class CombatUIManager : MonoBehaviour
     private void OnRestartClicked()
     {
         HideAllPanels();
-        if (combatSystem != null)
+        if (combatSystem != null && Input.GetKeyDown(KeyCode.R))
             combatSystem.RestartGame();
     }
 
     private void OnNextLevelClicked()
     {
         HideAllPanels();
-        if (combatSystem != null)
+        if (combatSystem != null )
             combatSystem.AdvanceToNextLevel();
     }
 

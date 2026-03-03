@@ -24,7 +24,8 @@ public class CombatSystem : MonoBehaviour
 
     [Header("Combat State")]
     [SerializeField] private bool playerIsVulnerable = false;
-    [SerializeField] private float vulnerableDamageMultiplier = 2f;
+    [SerializeField] private float baseVulnerableDamageMultiplier = 2f;
+    private int vulnerabilityStackCount = 0;  // Contador de veces que el jugador se pasó (bust)
 
     [Header("Events")]
     public UnityEvent<int, int> OnPlayerHealthChanged;      // current, max
@@ -37,6 +38,7 @@ public class CombatSystem : MonoBehaviour
     public UnityEvent OnVictory;
     public UnityEvent OnPlayerBecameVulnerable;
     public UnityEvent OnPlayerVulnerabilityCleared;
+    public UnityEvent<int> OnVulnerabilityStackChanged;     // nueva línea para el contador
 
     // Properties públicas
     public int PlayerHealth => playerCurrentHealth;
@@ -45,6 +47,8 @@ public class CombatSystem : MonoBehaviour
     public int DealerMaxHealth => dealerMaxHealth;
     public int CurrentLevel => currentLevel;
     public bool IsPlayerVulnerable => playerIsVulnerable;
+    public int VulnerabilityStacks => vulnerabilityStackCount;
+    public float CurrentVulnerableMultiplier => CalculateVulnerableMultiplier();
     public LevelConfig CurrentLevelConfig => GetCurrentLevelConfig();
 
     private void Awake()
@@ -94,6 +98,7 @@ public class CombatSystem : MonoBehaviour
         dealerCurrentHealth = dealerMaxHealth;
         
         playerIsVulnerable = false;
+        vulnerabilityStackCount = 0;
 
         OnPlayerHealthChanged?.Invoke(playerCurrentHealth, playerMaxHealth);
         OnDealerHealthChanged?.Invoke(dealerCurrentHealth, dealerMaxHealth);
@@ -154,9 +159,9 @@ public class CombatSystem : MonoBehaviour
                 // Verificar si el jugador se pasó (bust)
                 if (playerScore > 21)
                 {
-                    // Jugador se pasó - queda vulnerable
-                    SetPlayerVulnerable();
-                    Debug.Log("¡Jugador se pasó! Queda VULNERABLE");
+                    // Jugador se pasó - aumentar vulnerabilidad
+                    IncreaseVulnerability();
+                    Debug.Log($"¡Jugador se pasó! Vulnerabilidad aumentada a: x{CurrentVulnerableMultiplier}");
                 }
                 else
                 {
@@ -213,15 +218,25 @@ public class CombatSystem : MonoBehaviour
     }
 
     /// <summary>
+    /// Calcula el multiplicador de vulnerabilidad basado en el contador
+    /// x2 con 1 stack, x4 con 2 stacks, x6 con 3 stacks, etc.
+    /// </summary>
+    private float CalculateVulnerableMultiplier()
+    {
+        return baseVulnerableDamageMultiplier + (vulnerabilityStackCount - 1) * 2f;
+    }
+
+    /// <summary>
     /// Aplica daño al jugador
     /// </summary>
     private void DealDamageToPlayerInternal(int damage)
     {
         // Aplicar multiplicador de vulnerabilidad
-        if (playerIsVulnerable)
+        if (playerIsVulnerable && vulnerabilityStackCount > 0)
         {
-            damage = Mathf.RoundToInt(damage * vulnerableDamageMultiplier);
-            Debug.Log($"¡VULNERABLE! Daño aumentado a {damage}");
+            float multiplier = CalculateVulnerableMultiplier();
+            damage = Mathf.RoundToInt(damage * multiplier);
+            Debug.Log($"¡VULNERABLE! (x{multiplier}) Daño aumentado a {damage}");
             ClearVulnerability();
         }
 
@@ -243,16 +258,20 @@ public class CombatSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// Marca al jugador como vulnerable
+    /// Aumenta el contador de vulnerabilidad cuando el jugador se pasa
     /// </summary>
-    private void SetPlayerVulnerable()
+    private void IncreaseVulnerability()
     {
+        vulnerabilityStackCount++;
         playerIsVulnerable = true;
         OnPlayerBecameVulnerable?.Invoke();
+        OnVulnerabilityStackChanged?.Invoke(vulnerabilityStackCount);
+        
+        Debug.Log($"Vulnerabilidad aumentada a {vulnerabilityStackCount} stacks (Multiplicador: x{CalculateVulnerableMultiplier()})");
     }
 
     /// <summary>
-    /// Limpia el estado de vulnerabilidad
+    /// Limpia el estado de vulnerabilidad (pero mantiene el contador)
     /// </summary>
     private void ClearVulnerability()
     {
@@ -260,8 +279,19 @@ public class CombatSystem : MonoBehaviour
         {
             playerIsVulnerable = false;
             OnPlayerVulnerabilityCleared?.Invoke();
-            Debug.Log("Vulnerabilidad eliminada");
+            Debug.Log($"Vulnerabilidad temporal eliminada (Stacks restantes: {vulnerabilityStackCount})");
         }
+    }
+
+    /// <summary>
+    /// Reinicia completamente el contador de vulnerabilidad
+    /// </summary>
+    public void ResetVulnerabilityStacks()
+    {
+        vulnerabilityStackCount = 0;
+        playerIsVulnerable = false;
+        OnVulnerabilityStackChanged?.Invoke(0);
+        Debug.Log("Contador de vulnerabilidad reiniciado");
     }
 
     /// <summary>
@@ -292,6 +322,7 @@ public class CombatSystem : MonoBehaviour
         if (currentLevel < maxLevels)
         {
             currentLevel++;
+            ResetVulnerabilityStacks();  // Reiniciar el contador en nuevo nivel
             InitializeCombat();
             
             if (blackjackGame != null)
@@ -312,7 +343,7 @@ public class CombatSystem : MonoBehaviour
     public void RestartGame()
     {
         currentLevel = 1;
-        playerIsVulnerable = false;
+        ResetVulnerabilityStacks();  // Reiniciar el contador
         InitializeCombat();
         
         if (blackjackGame != null)

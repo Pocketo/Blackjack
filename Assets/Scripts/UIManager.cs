@@ -2,9 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+
 /// <summary>
 /// Maneja toda la interfaz de usuario del juego
 /// Conecta los eventos del juego con los elementos visuales
+/// Controla Hit (Q), Stand (W) y New Game (E) usando Input tradicional
 /// </summary>
 public class UIManager : MonoBehaviour
 {
@@ -15,7 +17,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI playerScoreText;
     [SerializeField] private TextMeshProUGUI dealerScoreText;
 
-    [Header("Buttons")]
+    [Header("Buttons (Visuales)")]
     [SerializeField] private Button hitButton;
     [SerializeField] private Button standButton;
     [SerializeField] private Button newGameButton;
@@ -35,16 +37,6 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        // Configurar listeners de botones
-        if (hitButton != null)
-            hitButton.onClick.AddListener(OnHitClicked);
-        
-        if (standButton != null)
-            standButton.onClick.AddListener(OnStandClicked);
-        
-        if (newGameButton != null)
-            newGameButton.onClick.AddListener(OnNewGameClicked);
-
         // Suscribirse a eventos del juego
         if (game != null)
         {
@@ -52,40 +44,61 @@ public class UIManager : MonoBehaviour
             game.OnPlayerScoreChanged.AddListener(OnPlayerScoreChanged);
             game.OnDealerScoreChanged.AddListener(OnDealerScoreChanged);
             game.OnGameEnded.AddListener(OnGameEnded);
+            game.OnCardDealt.AddListener(OnCardDealt);
         }
 
         // Estado inicial
         HideResult();
         UpdateButtonStates(GameState.GameOver);
-        if (game != null)
-        {
-            game.OnCardDealt.AddListener(OnCardDealt);
-            game.OnGameEnded.AddListener(OnGameEnded);
-        }
     }
-    
+
+    private void Update()
+    {
+        // Detectar input del teclado
+        DetectKeyboardInput();
+    }
 
     private void OnDestroy()
     {
-        // Limpiar listeners
-        if (hitButton != null)
-            hitButton.onClick.RemoveListener(OnHitClicked);
-        
-        if (standButton != null)
-            standButton.onClick.RemoveListener(OnStandClicked);
-        
-        if (newGameButton != null)
-            newGameButton.onClick.RemoveListener(OnNewGameClicked);
-
+        // Limpiar listeners de eventos del juego
         if (game != null)
         {
             game.OnGameStateChanged.RemoveListener(OnGameStateChanged);
             game.OnPlayerScoreChanged.RemoveListener(OnPlayerScoreChanged);
             game.OnDealerScoreChanged.RemoveListener(OnDealerScoreChanged);
             game.OnGameEnded.RemoveListener(OnGameEnded);
+            game.OnCardDealt.RemoveListener(OnCardDealt);
         }
-        
     }
+
+    #region Input Detection
+
+    /// <summary>
+    /// Detecta el input del teclado en cada frame
+    /// Q = Hit, W = Stand, E = New Game
+    /// </summary>
+    private void DetectKeyboardInput()
+    {
+        // Q para Hit
+        if (Input.GetKeyDown(KeyCode.Q) && hitButton != null && hitButton.interactable)
+        {
+            OnHitClicked();
+        }
+
+        // W para Stand
+        if (Input.GetKeyDown(KeyCode.W) && standButton != null && standButton.interactable)
+        {
+            OnStandClicked();
+        }
+
+        // E para New Game
+        if (Input.GetKeyDown(KeyCode.E) && newGameButton != null && newGameButton.interactable)
+        {
+            OnNewGameClicked();
+        }
+    }
+
+    #endregion
 
     #region Button Handlers
 
@@ -93,7 +106,7 @@ public class UIManager : MonoBehaviour
     {
         if (AudioManager.Instance != null)
             AudioManager.Instance.PlayButtonClick();
-        
+
         if (game != null && game.CanPlayerAct())
             game.PlayerHit();
     }
@@ -160,11 +173,19 @@ public class UIManager : MonoBehaviour
     private void OnGameEnded(GameResult result)
     {
         ShowResult(result);
-    
+
         // Reproducir sonido según resultado
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayResultSound(result);
+        }
+    }
+
+    private void OnCardDealt()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayCardDeal();
         }
     }
 
@@ -247,7 +268,7 @@ public class UIManager : MonoBehaviour
             resultPanel.SetActive(true);
             resultText.text = message;
             resultText.color = Color.white;
-            
+
             if (duration > 0)
             {
                 Invoke(nameof(HideResult), duration);
@@ -268,12 +289,4 @@ public class UIManager : MonoBehaviour
     }
 
     #endregion
-    private void OnCardDealt()
-    {
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayCardDeal();
-        }
-    }
-    
 }
