@@ -10,6 +10,11 @@ public class Hand : MonoBehaviour
     [Header("Layout Settings")]
     [SerializeField] private float cardSpacing = 1.5f;
     [SerializeField] private float cardOverlap = 0.3f; // Solapamiento horizontal
+    [SerializeField] private bool isPlayerHand = false; // true = izquierda, false = derecha
+    
+    [Header("Rendering Settings")]
+    [SerializeField] private string sortingLayerName = "Cards"; // Capa para evitar superposición con UI
+    [SerializeField] private int baseSortingOrder = 0;
     
     private List<Card> cards = new List<Card>();
 
@@ -37,16 +42,50 @@ public class Hand : MonoBehaviour
             card.transform.position = targetPos;
         }
     
-        // Actualizar sorting order
-        SpriteRenderer sr = card.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.sortingOrder = cards.Count - 1;
+        // Actualizar sorting order y layer
+        ConfigureCardRendering(card, cards.Count - 1);
     }
 
+    /// <summary>
+    /// Calcula la posición de una carta según el índice y la dirección de la mano
+    /// </summary>
     private Vector3 CalculateCardPosition(int index)
     {
         float totalWidth = index * cardOverlap;
-        float startX = -totalWidth / 2f;
-        return transform.position + new Vector3(startX + (index * cardOverlap), 0, -index * 0.01f);
+        
+        // Determinar dirección según si es jugador o dealer
+        float direction = isPlayerHand ? -1f : 1f; // Jugador: izquierda, Dealer: derecha
+        float startX = isPlayerHand ? totalWidth / 2f : -totalWidth / 2f;
+        
+        return transform.position + new Vector3(
+            startX + (index * cardOverlap * direction), 
+            0, 
+            -index * 0.01f
+        );
+    }
+
+    /// <summary>
+    /// Configura el Sorting Layer y Order para evitar superposición con UI
+    /// </summary>
+    private void ConfigureCardRendering(Card card, int index)
+    {
+        SpriteRenderer sr = card.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            // Asignar sorting layer para que las cartas no se superpongan a UI
+            sr.sortingLayerName = sortingLayerName;
+            
+            // Las cartas más recientes van encima
+            sr.sortingOrder = baseSortingOrder + index;
+        }
+        
+        // También configurar sprites hijos si existen
+        SpriteRenderer[] childRenderers = card.GetComponentsInChildren<SpriteRenderer>();
+        foreach (SpriteRenderer renderer in childRenderers)
+        {
+            renderer.sortingLayerName = sortingLayerName;
+            renderer.sortingOrder = baseSortingOrder + index;
+        }
     }
 
     /// <summary>
@@ -147,23 +186,25 @@ public class Hand : MonoBehaviour
     /// <summary>
     /// Reposiciona todas las cartas en la mano
     /// </summary>
-    private void RepositionCards()
+    public void RepositionCards()
     {
-        float totalWidth = (cards.Count - 1) * cardOverlap;
-        float startX = -totalWidth / 2f;
-
         for (int i = 0; i < cards.Count; i++)
         {
-            Vector3 targetPos = transform.position + new Vector3(startX + (i * cardOverlap), 0, -i * 0.01f);
+            Vector3 targetPos = CalculateCardPosition(i);
             cards[i].transform.position = targetPos;
             
-            // Asegurar que las cartas más recientes estén encima
-            SpriteRenderer sr = cards[i].GetComponent<SpriteRenderer>();
-            if (sr != null)
-            {
-                sr.sortingOrder = i;
-            }
+            // Re-configurar rendering
+            ConfigureCardRendering(cards[i], i);
         }
+    }
+
+    /// <summary>
+    /// Cambia la dirección de la mano en runtime
+    /// </summary>
+    public void SetPlayerHand(bool isPlayer)
+    {
+        isPlayerHand = isPlayer;
+        RepositionCards();
     }
 
     /// <summary>
@@ -220,4 +261,32 @@ public class Hand : MonoBehaviour
         }
         return result.Trim() + $" (Total: {GetValue()})";
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Visualización en el Editor para debugging
+    /// </summary>
+    private void OnDrawGizmos()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        // Color según tipo de mano
+        Gizmos.color = isPlayerHand ? Color.green : Color.red;
+        Gizmos.DrawWireSphere(transform.position, 0.3f);
+        
+        // Dibujar flecha de dirección
+        float direction = isPlayerHand ? -1f : 1f;
+        Vector3 arrowEnd = transform.position + new Vector3(direction * 0.6f, 0f, 0f);
+        Gizmos.DrawLine(transform.position, arrowEnd);
+        
+        // Dibujar posiciones de cartas
+        Gizmos.color = Color.yellow;
+        for (int i = 0; i < cards.Count; i++)
+        {
+            Vector3 cardPos = CalculateCardPosition(i);
+            Gizmos.DrawWireCube(cardPos, new Vector3(0.2f, 0.3f, 0.01f));
+        }
+    }
+#endif
 }
